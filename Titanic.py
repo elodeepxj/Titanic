@@ -9,8 +9,6 @@ from sklearn.ensemble import RandomForestRegressor as df, RandomForestRegressor
 titanicData = pd.read_csv("F:/kaggle/train.csv");
 print "表信息：",titanicData.shape;
 print "表所有字段:",titanicData.columns;
-print "字段属性为int的："
-print titanicData.describe()
 # PassengerId-乘客ID
 # Survived-是否获救
 # Pclass-乘客等级
@@ -23,7 +21,8 @@ print titanicData.describe()
 # Ticket-船票信息
 # Cabin-船舱
 # Embarked-登船港口
-
+print "字段属性为int的："
+print titanicData.describe()
 
 # 冗余数据处理
 def redundancyHandler(titanicData):
@@ -104,6 +103,7 @@ titanicData = set_Cabin_type(data_train)
 # 冗余信息处理
 titanicData = redundancyHandler(titanicData)
 
+#构建模型
 def buildingModel(titanicData):
     # 用正则取出我们要的属性值
     train_df = titanicData.filter(regex='Survived|Age|SibSp|Parch|Fare|Cabin_.*|Embarked|Sex|Pclass')
@@ -120,6 +120,10 @@ def buildingModel(titanicData):
     clf.fit(X, y)
     return clf;
 
+
+testData = pd.read_csv("F:/kaggle/test.csv")
+print "test所有字段"
+print testData.columns;
 
 
 
