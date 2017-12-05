@@ -1,6 +1,8 @@
 # -*- coding:utf-8 -*-
 import pandas as pd;
+import numpy as np;
 from sklearn import linear_model
+import sklearn.preprocessing as preprocessing
 
 from Plot import Plot
 
@@ -38,7 +40,7 @@ def redundancyHandler(titanicData):
     #以Cabin为例，原本一个属性维度，因为其取值可以是[‘yes’,’no’]，而将其平展开为’Cabin_yes’,’Cabin_no’两个属性
     dummies_cabin = pd.get_dummies(titanicData['Cabin'],prefix='Cabin')
     titanicData =pd.concat([titanicData,dummies_cabin],axis=1)
-    titanicData.drop(['Cabin'],1)
+    titanicData.drop(['Cabin','Pclass','Name'],axis=1,inplace=True)
 
     # Age字段缺失值处理
     # 用中位数填充缺失值
@@ -64,8 +66,8 @@ def redundancyHandler(titanicData):
 plot = Plot();
 
 
-#丢失数据处理
-def setMissingAges():
+# 丢失数据处理 age
+def setMissingAges(titanicData):
     #添加丢失数据，年龄
     age_df = titanicData[['Age','Fare','Parch','SibSp','Pclass']]
 
@@ -90,20 +92,21 @@ def setMissingAges():
 
     return titanicData, rfr
 
-
 def set_Cabin_type(df):
     df.loc[(df.Cabin.notnull()), 'Cabin'] = "Yes"
     df.loc[(df.Cabin.isnull()), 'Cabin'] = "No"
     return df
 
-#添加丢失数据，年龄
-data_train, rfr = setMissingAges()
-titanicData = set_Cabin_type(data_train)
+# 将一些变化幅度较大的特征化到[-1,1]之内
+def scaling(df):
+    scaler = preprocessing.StandardScaler()
+    age_scale_param = scaler.fit(df['Age'].values.reshape(-1,1))
+    df['Age_scaled'] = scaler.fit_transform(df['Age'].values.reshape(-1,1), age_scale_param)
+    fare_scale_param = scaler.fit(df['Fare'].values.reshape(-1,1))
+    df['Fare_scaled'] = scaler.fit_transform(df['Fare'].values.reshape(-1,1), fare_scale_param)
+    return df;
 
-# 冗余信息处理
-titanicData = redundancyHandler(titanicData)
-
-#构建模型
+# 构建模型
 def buildingModel(titanicData):
     # 用正则取出我们要的属性值
     train_df = titanicData.filter(regex='Survived|Age|SibSp|Parch|Fare|Cabin_.*|Embarked|Sex|Pclass')
@@ -120,10 +123,53 @@ def buildingModel(titanicData):
     clf.fit(X, y)
     return clf;
 
+#添加丢失数据，年龄
+titanicData, rfr = setMissingAges(titanicData)
+titanicData = set_Cabin_type(titanicData)
 
+# 冗余数据处理
+titanicData = redundancyHandler(titanicData)
+# scaling处理
+titanicData = scaling(titanicData)
+# 构建模型
+clf = buildingModel(titanicData)
+
+
+
+# 获取test中的数据
 testData = pd.read_csv("F:/kaggle/test.csv")
-print "test所有字段"
-print testData.columns;
+
+# test给fare字段丢失数据添加数据0
+testData.loc[ (testData.Fare.isnull()), 'Fare' ] = 0
+# test添加丢失数据,age
+tmp_df = testData[['Age','Fare', 'Parch', 'SibSp', 'Pclass']]
+null_age = tmp_df[testData.Age.isnull()].as_matrix()
+# 根据特征属性X预测年龄并补上
+x = null_age[:,1::]
+predictedAges = rfr.predict(x)#必须要用模型的rfr，RandomForestRegressor
+testData.loc[ (testData.Age.isnull()), 'Age' ] = predictedAges
+
+# test冗余数据处理
+testData = set_Cabin_type(testData)
+testData = redundancyHandler(testData)
+testData = scaling(testData)
+
+test = testData.filter(regex='Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass_.*')
+# predictions = clf.predict(test)
+# result = pd.DataFrame({'PassengerId':testData['PassengerId'].as_matrix(), 'Survived':predictions.astype(np.int32)})
+# result.to_csv("F:/kaggle/regressor.csv", index=False)
+
+print "------------test------------------"
+print test.info()
+
+print "------------titanic------------------"
+print titanicData.info()
+
+print "-----------clf-------------------"
+print clf
+
+
+
 
 
 
