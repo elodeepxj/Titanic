@@ -10,7 +10,6 @@ from sklearn.ensemble import RandomForestRegressor as df, RandomForestRegressor
 
 titanicData = pd.read_csv("F:/kaggle/train.csv");
 print "表信息：",titanicData.shape;
-print "表所有字段:",titanicData.columns;
 # PassengerId-乘客ID
 # Survived-是否获救
 # Pclass-乘客等级
@@ -23,8 +22,9 @@ print "表所有字段:",titanicData.columns;
 # Ticket-船票信息
 # Cabin-船舱
 # Embarked-登船港口
-print "字段属性为int的："
-print titanicData.describe()
+# print "字段属性为int的："
+# print titanicData.describe()
+print "表所有字段:",titanicData.columns;
 
 # 冗余数据处理
 def redundancyHandler(titanicData):
@@ -148,25 +148,24 @@ null_age = tmp_df[testData.Age.isnull()].as_matrix()
 x = null_age[:,1::]
 predictedAges = rfr.predict(x)#必须要用模型的rfr，RandomForestRegressor
 testData.loc[ (testData.Age.isnull()), 'Age' ] = predictedAges
-
+print testData.shape;
 # test冗余数据处理
 testData = set_Cabin_type(testData)
 testData = redundancyHandler(testData)
 testData = scaling(testData)
 
+
+
+print "module表所有字段：",titanicData.columns;
+print "test表所有字段:",testData.columns;
 test = testData.filter(regex='Age_.*|SibSp|Parch|Fare_.*|Cabin_.*|Embarked_.*|Sex_.*|Pclass_.*')
+
+print titanicData.shape;
+
 # predictions = clf.predict(test)
 # result = pd.DataFrame({'PassengerId':testData['PassengerId'].as_matrix(), 'Survived':predictions.astype(np.int32)})
 # result.to_csv("F:/kaggle/regressor.csv", index=False)
 
-print "------------test------------------"
-print test.info()
-
-print "------------titanic------------------"
-print titanicData.info()
-
-print "-----------clf-------------------"
-print clf
 
 
 
